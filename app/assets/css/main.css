@@ -1,0 +1,18 @@
+@import "tailwindcss" theme(static);
+@import "@nuxt/ui";
+
+@theme static {
+	--font-sans: 'Public Sans', sans-serif;
+
+	--color-claude-50: #fcf4f2;
+	--color-claude-100: #f9e6e1;
+	--color-claude-200: #f2c9be;
+	--color-claude-300: #e9a390;
+	--color-claude-400: #df785c;
+	--color-claude-500: #d54e29;
+	--color-claude-600: #b34122;
+	--color-claude-700: #91351c;
+	--color-claude-800: #732a16;
+	--color-claude-900: #551f10;
+	--color-claude-950: #37140a;
+}
