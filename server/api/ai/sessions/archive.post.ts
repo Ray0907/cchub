@@ -1,5 +1,5 @@
 import { rename, readFile, mkdir, unlink } from 'node:fs/promises'
-import { join, dirname } from 'node:path'
+import { dirname } from 'node:path'
 
 export default defineApiHandler(async (event) => {
 	const body = await readBody(event)
@@ -9,10 +9,12 @@ export default defineApiHandler(async (event) => {
 	if (!id || !project) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing id or project' })
 	}
+	assertSafeSegment(id, 'session ID')
+	assertSafeSegment(project, 'project')
 
 	const trash_dir = resolveClaudePath('trash')
-	const meta_path = join(trash_dir, project, `${id}.meta.json`)
-	const jsonl_path = join(trash_dir, project, `${id}.jsonl`)
+	const meta_path = safeJoin(trash_dir, project, `${id}.meta.json`)
+	const jsonl_path = safeJoin(trash_dir, project, `${id}.jsonl`)
 
 	let meta: { original_path: string }
 	try {
@@ -22,6 +24,9 @@ export default defineApiHandler(async (event) => {
 	catch {
 		throw createError({ statusCode: 404, statusMessage: 'Archived session not found' })
 	}
+
+	// CRITICAL: Validate that original_path is within ~/.claude/
+	assertPathSafe(meta.original_path)
 
 	// Ensure the original directory exists
 	await mkdir(dirname(meta.original_path), { recursive: true })

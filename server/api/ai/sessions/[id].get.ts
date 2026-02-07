@@ -1,5 +1,4 @@
 import { readFile, readdir } from 'node:fs/promises'
-import { join } from 'node:path'
 
 interface ConversationMessage {
 	role: 'user' | 'assistant'
@@ -12,6 +11,7 @@ export default defineApiHandler(async (event) => {
 	if (!id) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing session ID' })
 	}
+	assertSafeSegment(id, 'session ID')
 
 	const projects_dir = resolveClaudePath('projects')
 	let jsonl_path: string | null = null
@@ -26,7 +26,7 @@ export default defineApiHandler(async (event) => {
 
 	let raw: string | null = null
 	for (const dir of dirs) {
-		const candidate = join(projects_dir, dir, `${id}.jsonl`)
+		const candidate = safeJoin(projects_dir, dir, `${id}.jsonl`)
 		try {
 			raw = await readFile(candidate, 'utf-8')
 			jsonl_path = candidate
@@ -38,7 +38,7 @@ export default defineApiHandler(async (event) => {
 	}
 
 	if (!jsonl_path || !raw) {
-		throw createError({ statusCode: 404, statusMessage: `Session "${id}" not found` })
+		throw createError({ statusCode: 404, statusMessage: 'Session not found' })
 	}
 	const lines = raw.split('\n').filter(l => l.trim())
 

@@ -1,5 +1,4 @@
 import { rename, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { createReadStream } from 'node:fs'
 import { createInterface } from 'node:readline'
 
@@ -8,9 +7,11 @@ export default defineApiHandler(async (event) => {
 	if (!id) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing session ID' })
 	}
+	assertSafeSegment(id, 'session ID')
 
 	const body = await readBody(event)
 	const project = body?.project as string | undefined
+	if (project) assertSafeSegment(project, 'project')
 
 	const projects_dir = resolveClaudePath('projects')
 	const trash_dir = resolveClaudePath('trash')
@@ -23,7 +24,7 @@ export default defineApiHandler(async (event) => {
 	let source_project: string | null = null
 
 	if (project) {
-		const candidate = join(projects_dir, project, `${id}.jsonl`)
+		const candidate = safeJoin(projects_dir, project, `${id}.jsonl`)
 		try {
 			const info = await stat(candidate)
 			if (info.isFile()) {
@@ -46,7 +47,7 @@ export default defineApiHandler(async (event) => {
 		}
 
 		for (const dir of dirs) {
-			const candidate = join(projects_dir, dir, `${id}.jsonl`)
+			const candidate = safeJoin(projects_dir, dir, `${id}.jsonl`)
 			try {
 				const info = await stat(candidate)
 				if (info.isFile()) {
@@ -62,18 +63,18 @@ export default defineApiHandler(async (event) => {
 	}
 
 	if (!source_path || !source_project) {
-		throw createError({ statusCode: 404, statusMessage: `Session "${id}" not found` })
+		throw createError({ statusCode: 404, statusMessage: 'Session not found' })
 	}
 
 	// Create project subfolder in trash to preserve origin
-	const trash_project_dir = join(trash_dir, source_project)
+	const trash_project_dir = safeJoin(trash_dir, source_project)
 	await mkdir(trash_project_dir, { recursive: true })
 
 	// Extract title before moving file
 	const title = await extractTitle(source_path)
 
 	// Write metadata so we know where to restore
-	const meta_path = join(trash_project_dir, `${id}.meta.json`)
+	const meta_path = safeJoin(trash_project_dir, `${id}.meta.json`)
 	await writeFile(meta_path, JSON.stringify({
 		id,
 		project: source_project,
@@ -83,7 +84,7 @@ export default defineApiHandler(async (event) => {
 	}), 'utf-8')
 
 	// Move JSONL to trash
-	const dest_path = join(trash_project_dir, `${id}.jsonl`)
+	const dest_path = safeJoin(trash_project_dir, `${id}.jsonl`)
 	await rename(source_path, dest_path)
 
 	return { ok: true }

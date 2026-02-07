@@ -1,5 +1,4 @@
 import { readdir, unlink, rm, stat } from 'node:fs/promises'
-import { join } from 'node:path'
 
 export default defineApiHandler(async (event) => {
 	const body = await readBody(event)
@@ -9,19 +8,23 @@ export default defineApiHandler(async (event) => {
 	const trash_dir = resolveClaudePath('trash')
 
 	if (id && project) {
+		// Validate path segments
+		assertSafeSegment(id, 'session ID')
+		assertSafeSegment(project, 'project')
+
 		// Delete one specific session from trash
-		const meta_path = join(trash_dir, project, `${id}.meta.json`)
-		const jsonl_path = join(trash_dir, project, `${id}.jsonl`)
+		const meta_path = safeJoin(trash_dir, project, `${id}.meta.json`)
+		const jsonl_path = safeJoin(trash_dir, project, `${id}.jsonl`)
 		await unlink(meta_path).catch(() => {})
 		await unlink(jsonl_path).catch(() => {})
 		return { ok: true }
 	}
 
-	// Empty entire trash
+	// Empty entire trash — only delete subdirectories within trash_dir
 	try {
 		const project_dirs = await readdir(trash_dir)
 		for (const dir of project_dirs) {
-			const path_dir = join(trash_dir, dir)
+			const path_dir = safeJoin(trash_dir, dir)
 			const info = await stat(path_dir).catch(() => null)
 			if (info?.isDirectory()) {
 				await rm(path_dir, { recursive: true, force: true })

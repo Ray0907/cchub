@@ -12,10 +12,11 @@ export function defineApiHandler<T>(
 			if (error && typeof error === 'object' && 'statusCode' in error) {
 				throw error
 			}
-			const message = error instanceof Error ? error.message : 'Internal server error'
+			// Log full error server-side, but don't leak filesystem paths to client
+			console.error('[API Error]', error)
 			throw createError({
 				statusCode: 500,
-				statusMessage: message
+				statusMessage: 'Internal server error'
 			})
 		}
 	})
