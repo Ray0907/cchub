@@ -5,6 +5,7 @@ export default defineApiHandler(async (event) => {
 	if (!name) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing session name' })
 	}
+	assertSafeSegment(name, 'session name')
 
 	const path_file = resolveClaudePath('sessions', `${name}.tmp`)
 
@@ -14,7 +15,7 @@ export default defineApiHandler(async (event) => {
 	])
 
 	if (!content_raw) {
-		throw createError({ statusCode: 404, statusMessage: `Session "${name}" not found` })
+		throw createError({ statusCode: 404, statusMessage: 'Session not found' })
 	}
 
 	return {

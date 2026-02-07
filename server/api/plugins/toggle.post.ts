@@ -59,5 +59,5 @@ export default defineApiHandler(async (event) => {
 
 	await writeFile(path_file, JSON.stringify(settings_updated, null, 2) + '\n', 'utf-8')
 
-	return { success: true, path_backup }
+	return { success: true }
 })

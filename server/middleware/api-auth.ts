@@ -1,3 +1,12 @@
+import { timingSafeEqual } from 'node:crypto'
+
+function safeCompare(a: string, b: string): boolean {
+	const bufA = Buffer.from(a)
+	const bufB = Buffer.from(b)
+	if (bufA.length !== bufB.length) return false
+	return timingSafeEqual(bufA, bufB)
+}
+
 export default defineEventHandler((event) => {
 	const path = getRequestURL(event).pathname
 
@@ -14,11 +23,11 @@ export default defineEventHandler((event) => {
 
 	// Check httpOnly cookie (set automatically by browser)
 	const cookie = getCookie(event, '__cc_auth')
-	if (cookie === getAuthToken()) return
+	if (cookie && safeCompare(cookie, getAuthToken())) return
 
 	// Check Authorization header (for programmatic access: curl, scripts)
 	const authHeader = getHeader(event, 'authorization')
-	if (authHeader === `Bearer ${getAuthToken()}`) return
+	if (authHeader && safeCompare(authHeader, `Bearer ${getAuthToken()}`)) return
 
 	// Allow SSR internal calls: Nitro's internal handler uses node-mock-http
 	// which creates mock sockets with the __unenv__ marker property.

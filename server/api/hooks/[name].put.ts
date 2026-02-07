@@ -5,6 +5,7 @@ export default defineApiHandler(async (event) => {
 	if (!name) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing hook name' })
 	}
+	assertSafeSegment(name, 'hook name')
 
 	const { content_raw } = await readBody<{ content_raw: string }>(event)
 	if (typeof content_raw !== 'string') {
@@ -16,5 +17,5 @@ export default defineApiHandler(async (event) => {
 	await writeFile(path_file, content_raw, 'utf-8')
 	await chmod(path_file, 0o755)
 
-	return { success: true, path_backup }
+	return { success: true }
 })

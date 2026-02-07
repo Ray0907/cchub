@@ -5,12 +5,15 @@ export default defineApiHandler(async (event) => {
 	if (!slug) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing rule path' })
 	}
+	for (const seg of slug.split('/')) {
+		assertSafeSegment(seg, 'rule path segment')
+	}
 
 	const path_file = resolveClaudePath('rules', slug)
 
 	const content_raw = await readFile(path_file, 'utf-8').catch(() => null)
 	if (!content_raw) {
-		throw createError({ statusCode: 404, statusMessage: `Rule "${slug}" not found` })
+		throw createError({ statusCode: 404, statusMessage: 'Rule not found' })
 	}
 
 	const { data } = parseFrontmatter(content_raw)

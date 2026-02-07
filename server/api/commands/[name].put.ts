@@ -5,6 +5,7 @@ export default defineApiHandler(async (event) => {
 	if (!name) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing command name' })
 	}
+	assertSafeSegment(name, 'command name')
 
 	const { content_raw } = await readBody<{ content_raw: string }>(event)
 	if (typeof content_raw !== 'string') {
@@ -15,5 +16,5 @@ export default defineApiHandler(async (event) => {
 	const path_backup = await createBackup(path_file)
 	await writeFile(path_file, content_raw, 'utf-8')
 
-	return { success: true, path_backup }
+	return { success: true }
 })

@@ -5,6 +5,7 @@ export default defineApiHandler(async (event) => {
 	if (!name) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing plan name' })
 	}
+	assertSafeSegment(name, 'plan name')
 
 	const path_file = resolveClaudePath('plans', `${name}.md`)
 
@@ -14,7 +15,7 @@ export default defineApiHandler(async (event) => {
 	])
 
 	if (!content_raw) {
-		throw createError({ statusCode: 404, statusMessage: `Plan "${name}" not found` })
+		throw createError({ statusCode: 404, statusMessage: 'Plan not found' })
 	}
 
 	const { data } = parseFrontmatter(content_raw)

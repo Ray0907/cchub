@@ -76,7 +76,11 @@ ${context ? `\nThe user is currently viewing: ${context}` : ''}`
 				stderr: (data: string) => {
 					console.error('[Agent SDK stderr]', data)
 				},
-				env: { ...process.env },
+				env: Object.fromEntries(
+				['PATH', 'HOME', 'SHELL', 'LANG', 'TERM', 'USER', 'TMPDIR', 'XDG_CONFIG_HOME']
+					.filter(k => process.env[k])
+					.map(k => [k, process.env[k]!])
+			),
 				...(id_session ? { resume: id_session } : {})
 			}
 		})
@@ -145,8 +149,8 @@ ${context ? `\nThe user is currently viewing: ${context}` : ''}`
 		writeSse('[DONE]')
 	}
 	catch (error) {
-		const message_error = error instanceof Error ? error.message : 'AI query failed'
-		writeSse(JSON.stringify({ type: 'error', message: message_error }))
+		console.error('[AI Chat Error]', error)
+		writeSse(JSON.stringify({ type: 'error', message: 'AI query failed' }))
 		writeSse('[DONE]')
 	}
 

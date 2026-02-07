@@ -1,5 +1,7 @@
 import matter from 'gray-matter'
 
+const MATTER_OPTS = { engines: { javascript: false as never } }
+
 export interface ParsedFrontmatter {
 	data: Record<string, unknown>
 	content: string
@@ -23,12 +25,12 @@ export interface SkillFrontmatter {
 }
 
 export function parseFrontmatter(raw: string): ParsedFrontmatter {
-	const { data, content } = matter(raw)
+	const { data, content } = matter(raw, MATTER_OPTS)
 	return { data, content }
 }
 
 export function parseAgentFrontmatter(raw: string): AgentFrontmatter {
-	const { data, content } = matter(raw)
+	const { data, content } = matter(raw, MATTER_OPTS)
 	const tools_raw = data.tools || data.allowedTools || ''
 	const tools = typeof tools_raw === 'string'
 		? tools_raw.split(',').map((t: string) => t.trim()).filter(Boolean)
@@ -44,7 +46,7 @@ export function parseAgentFrontmatter(raw: string): AgentFrontmatter {
 }
 
 export function parseSkillFrontmatter(raw: string): SkillFrontmatter {
-	const { data, content } = matter(raw)
+	const { data, content } = matter(raw, MATTER_OPTS)
 
 	return {
 		name_skill: data.name || '',

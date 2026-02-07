@@ -10,5 +10,5 @@ export default defineApiHandler(async (event) => {
 	const path_backup = await createBackup(path_file)
 	await writeFile(path_file, JSON.stringify({ mcpServers: servers }, null, 2) + '\n', 'utf-8')
 
-	return { success: true, path_backup }
+	return { success: true }
 })

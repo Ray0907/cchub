@@ -6,13 +6,14 @@ export default defineApiHandler(async (event) => {
 	if (!name) {
 		throw createError({ statusCode: 400, statusMessage: 'Missing skill name' })
 	}
+	assertSafeSegment(name, 'skill name')
 
 	const path_dir = resolveClaudePath('skills', name)
 	const path_file = join(path_dir, 'SKILL.md')
 
 	const content_raw = await readFile(path_file, 'utf-8').catch(() => null)
 	if (!content_raw) {
-		throw createError({ statusCode: 404, statusMessage: `Skill "${name}" not found` })
+		throw createError({ statusCode: 404, statusMessage: 'Skill not found' })
 	}
 
 	const parsed = parseSkillFrontmatter(content_raw)
