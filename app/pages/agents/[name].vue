@@ -4,7 +4,22 @@ const name_agent = route.params.name as string
 
 useSeoMeta({ title: `Agent: ${name_agent}` })
 
-const { data, status } = useFetch(`/api/agents/${name_agent}`)
+const { data, status, refresh } = useFetch(`/api/agents/${name_agent}`)
+
+async function handleSave(content: string): Promise<void> {
+	await $fetch(`/api/agents/${name_agent}`, {
+		method: 'PUT',
+		body: {
+			frontmatter: {
+				description: data.value?.description ?? '',
+				model: data.value?.model ?? '',
+				tools: data.value?.tools ?? [],
+			},
+			content_body: content,
+		}
+	})
+	await refresh()
+}
 </script>
 
 <template>
@@ -24,7 +39,12 @@ const { data, status } = useFetch(`/api/agents/${name_agent}`)
 					<USkeleton class="h-4 w-96" />
 					<USkeleton class="h-64" />
 				</div>
-				<AgentDetail v-else-if="data" :agent="data" />
+				<AgentDetail
+					v-else-if="data"
+					:agent="data"
+					:can_edit="true"
+					@save="handleSave"
+				/>
 			</div>
 		</template>
 	</UDashboardPanel>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({ title: 'Commands' })
 
-const { data, status } = useFetch('/api/commands')
+const { data, status, refresh } = useFetch('/api/commands')
 
 const list_items = computed(() => {
 	if (!data.value) return []
@@ -10,8 +10,17 @@ const list_items = computed(() => {
 		icon: 'i-lucide-terminal' as const,
 		description: cmd.description,
 		content_raw: cmd.content_raw,
+		name_command: cmd.name_command,
 	}))
 })
+
+async function handleSave(name_command: string, content: string): Promise<void> {
+	await $fetch(`/api/commands/${name_command}`, {
+		method: 'PUT',
+		body: { content_raw: content }
+	})
+	await refresh()
+}
 </script>
 
 <template>
@@ -32,7 +41,11 @@ const list_items = computed(() => {
 				<div v-else-if="list_items.length" class="space-y-3">
 					<UAccordion :items="list_items" type="multiple">
 						<template #body="{ item }">
-							<MDC :value="item.content_raw" tag="article" class="prose prose-sm dark:prose-invert max-w-none p-4" />
+							<MarkdownViewer
+								:content_raw="item.content_raw"
+								:can_edit="true"
+								@save="handleSave(item.name_command, $event)"
+							/>
 						</template>
 					</UAccordion>
 				</div>

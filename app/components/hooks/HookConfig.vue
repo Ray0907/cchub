@@ -1,6 +1,13 @@
 <script setup lang="ts">
-const props = defineProps<{
+const props = withDefaults(defineProps<{
 	config: unknown
+	can_edit?: boolean
+}>(), {
+	can_edit: false
+})
+
+const emit = defineEmits<{
+	save: [content: string]
 }>()
 
 const content_json = computed(() => {
@@ -17,7 +24,13 @@ const content_json = computed(() => {
 				<span class="text-sm font-medium">Hook Configuration (from settings.json)</span>
 			</div>
 		</template>
-		<CodeViewer v-if="content_json" :content="content_json" language="json" />
+		<CodeViewer
+			v-if="content_json"
+			:content="content_json"
+			language="json"
+			:can_edit="can_edit"
+			@save="emit('save', $event)"
+		/>
 		<div v-else class="text-sm text-dimmed p-4">
 			No hook configuration found in settings.
 		</div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{
+withDefaults(defineProps<{
 	agent: {
 		name_agent: string
 		description: string
@@ -8,6 +8,13 @@ defineProps<{
 		name_file: string
 		content_raw: string
 	}
+	can_edit?: boolean
+}>(), {
+	can_edit: false
+})
+
+const emit = defineEmits<{
+	save: [content: string]
 }>()
 </script>
 
@@ -39,7 +46,7 @@ defineProps<{
 					:key="tool"
 					color="neutral"
 					variant="subtle"
-					size="xs"
+					size="sm"
 				>
 					{{ tool }}
 				</UBadge>
@@ -49,6 +56,8 @@ defineProps<{
 		<UCard>
 			<MarkdownViewer
 				:content_raw="agent.content_raw"
+				:can_edit="can_edit"
+				@save="emit('save', $event)"
 			/>
 		</UCard>
 	</div>

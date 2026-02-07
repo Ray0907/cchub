@@ -61,3 +61,22 @@ export async function readJsonlFile(
 
 	return { list_entries, count_total }
 }
+
+export async function readJsonlEntries(
+	path_file: string
+): Promise<Record<string, unknown>[]> {
+	const file_stat = await stat(path_file).catch(() => null)
+	if (!file_stat) return []
+
+	const list_entries: Record<string, unknown>[] = []
+	const stream = createReadStream(path_file, { encoding: 'utf-8' })
+	const reader = createInterface({ input: stream })
+
+	for await (const line of reader) {
+		if (!line.trim()) continue
+		try { list_entries.push(JSON.parse(line)) }
+		catch { continue }
+	}
+
+	return list_entries
+}

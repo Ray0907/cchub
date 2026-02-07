@@ -1,7 +1,15 @@
 <script setup lang="ts">
 useSeoMeta({ title: 'CLAUDE.md' })
 
-const { data, status } = useFetch('/api/claude-md')
+const { data, status, refresh } = useFetch('/api/claude-md')
+
+async function handleSave(content: string): Promise<void> {
+	await $fetch('/api/claude-md', {
+		method: 'PUT',
+		body: { content_raw: content }
+	})
+	await refresh()
+}
 </script>
 
 <template>
@@ -22,6 +30,8 @@ const { data, status } = useFetch('/api/claude-md')
 				<UCard v-else-if="data">
 					<MarkdownViewer
 						:content_raw="data.content_raw"
+						:can_edit="true"
+						@save="handleSave"
 					/>
 				</UCard>
 				<div v-else class="text-sm text-dimmed">

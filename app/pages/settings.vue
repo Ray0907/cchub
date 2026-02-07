@@ -1,7 +1,15 @@
 <script setup lang="ts">
 useSeoMeta({ title: 'Settings' })
 
-const { data, status } = useFetch('/api/settings')
+const { data, status, refresh } = useFetch('/api/settings')
+
+async function handleSave(payload: { type: string; data: object }): Promise<void> {
+	await $fetch('/api/settings', {
+		method: 'PUT',
+		body: payload
+	})
+	await refresh()
+}
 </script>
 
 <template>
@@ -24,6 +32,8 @@ const { data, status } = useFetch('/api/settings')
 					v-else-if="data"
 					:settings_global="data.settings_global"
 					:settings_local="data.settings_local"
+					:can_edit="true"
+					@save="handleSave"
 				/>
 			</div>
 		</template>

@@ -11,12 +11,20 @@ const slug = computed(() => {
 
 const { data: tree_data, status: status_tree } = useFetch('/api/rules')
 
-const { data: rule_data, status: status_rule } = useFetch(
+const { data: rule_data, status: status_rule, refresh: refreshRule } = useFetch(
 	() => slug.value ? `/api/rules/${slug.value}` : '',
 	{ watch: [slug], immediate: !!slug.value }
 )
 
 const has_slug = computed(() => !!slug.value)
+
+async function handleSave(content: string): Promise<void> {
+	await ($fetch as Function)(`/api/rules/${slug.value}`, {
+		method: 'PUT',
+		body: { content_raw: content }
+	})
+	await refreshRule()
+}
 </script>
 
 <template>
@@ -44,7 +52,12 @@ const has_slug = computed(() => !!slug.value)
 							<USkeleton class="h-8 w-48" />
 							<USkeleton class="h-64" />
 						</div>
-						<RuleViewer v-else-if="rule_data" :rule="rule_data" />
+						<RuleViewer
+							v-else-if="rule_data"
+							:rule="(rule_data as any)"
+							:can_edit="true"
+							@save="handleSave"
+						/>
 					</template>
 					<div v-else class="flex items-center justify-center h-full text-dimmed text-sm">
 						Select a rule from the tree to view its content.
