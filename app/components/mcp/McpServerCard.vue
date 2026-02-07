@@ -36,16 +36,12 @@ defineProps<{
 
 			<div v-if="server.args?.length">
 				<p class="text-xs font-medium text-dimmed mb-1">Arguments</p>
-				<div class="flex flex-wrap gap-1">
-					<UBadge
+				<div class="flex flex-wrap gap-1.5">
+					<code
 						v-for="(arg, idx) in server.args"
 						:key="idx"
-						color="neutral"
-						variant="subtle"
-						size="xs"
-					>
-						{{ arg }}
-					</UBadge>
+						class="text-xs bg-elevated px-2 py-1 rounded font-mono break-all"
+					>{{ arg }}</code>
 				</div>
 			</div>
 

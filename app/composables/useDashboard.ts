@@ -2,7 +2,6 @@ import { createSharedComposable } from '@vueuse/core'
 
 const _useDashboard = () => {
 	const router = useRouter()
-	const is_ai_sidebar_open = ref(false)
 
 	defineShortcuts({
 		'g-c': () => router.push('/ai'),
@@ -13,13 +12,10 @@ const _useDashboard = () => {
 		'g-s': () => router.push('/settings'),
 		'g-m': () => router.push('/claude-md'),
 		'g-h': () => router.push('/history'),
-		'g-e': () => router.push('/sessions'),
-		'a-i': () => is_ai_sidebar_open.value = !is_ai_sidebar_open.value
+		'g-e': () => router.push('/sessions')
 	})
 
-	return {
-		is_ai_sidebar_open
-	}
+	return {}
 }
 
 export const useDashboard = createSharedComposable(_useDashboard)

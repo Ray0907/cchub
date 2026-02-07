@@ -2,12 +2,6 @@
 useSeoMeta({ title: 'Claude Code' })
 
 const { list_messages, is_streaming, text_partial, path_cwd, id_session, sendMessage, clearChat, resumeSession } = useAiChat()
-const { is_ai_sidebar_open } = useDashboard()
-
-// Close sidebar when on full AI page - no need for both
-onMounted(() => {
-	is_ai_sidebar_open.value = false
-})
 
 const text_input = ref('')
 const el_scroll = ref<HTMLElement | null>(null)

@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
-const { is_ai_sidebar_open } = useDashboard()
-const { clearChat } = useAiChat()
-
 const open = ref(false)
 
 const links_main: NavigationMenuItem[] = [{
@@ -83,15 +80,6 @@ const links_main: NavigationMenuItem[] = [{
 	onSelect: () => { open.value = false }
 }]
 
-const links_support: NavigationMenuItem[] = [{
-	label: 'AI Assistant',
-	icon: 'i-lucide-sparkles',
-	onSelect: () => {
-		is_ai_sidebar_open.value = !is_ai_sidebar_open.value
-		open.value = false
-	}
-}]
-
 const groups_search = computed(() => [{
 	id: 'navigation',
 	label: 'Navigation',
@@ -130,14 +118,6 @@ const groups_search = computed(() => [{
 					tooltip
 					popover
 				/>
-
-				<UNavigationMenu
-					:collapsed="collapsed"
-					:items="links_support"
-					orientation="vertical"
-					tooltip
-					class="mt-auto"
-				/>
 			</template>
 
 			<template #footer="{ collapsed }">
@@ -148,31 +128,5 @@ const groups_search = computed(() => [{
 		<UDashboardSearch :groups="groups_search" />
 
 		<slot />
-
-		<div
-			v-if="is_ai_sidebar_open"
-			class="border-l border-default w-[25%] min-w-[300px] max-w-[500px] flex flex-col"
-		>
-			<div class="flex items-center justify-between px-4 h-12 border-b border-default shrink-0">
-				<span class="font-semibold text-sm">AI Assistant</span>
-				<div class="flex items-center gap-1">
-					<UButton
-						icon="i-lucide-trash-2"
-						color="neutral"
-						variant="ghost"
-						size="xs"
-						@click="clearChat"
-					/>
-					<UButton
-						icon="i-lucide-x"
-						color="neutral"
-						variant="ghost"
-						size="xs"
-						@click="is_ai_sidebar_open = false"
-					/>
-				</div>
-			</div>
-			<AiSidebar />
-		</div>
 	</UDashboardGroup>
 </template>
