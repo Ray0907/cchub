@@ -23,7 +23,7 @@ const { data, refresh, status } = useFetch('/api/ai/sessions', {
 const list_sessions = computed(() => data.value?.sessions ?? [])
 const list_projects = computed(() => data.value?.projects ?? [])
 
-// Archive data (API will be created in Task 3)
+// Archive data
 const { data: list_archive, refresh: refreshArchive } = useFetch('/api/ai/sessions/archive', {
 	default: () => [] as Array<{ id: string; title: string; project: string; deleted_at: string }>
 })
@@ -72,8 +72,7 @@ async function confirmDelete(session: { id: string; project: string }): Promise<
 			method: 'DELETE',
 			body: { project: session.project }
 		})
-		await refresh()
-		await refreshArchive()
+		await Promise.all([refresh(), refreshArchive()])
 	}
 	catch (error) {
 		console.error('Failed to delete session:', error)
@@ -86,6 +85,27 @@ async function confirmDelete(session: { id: string; project: string }): Promise<
 
 function cancelDelete(): void {
 	id_confirm_delete.value = null
+}
+
+async function handleRestore(item: { id: string; project: string }): Promise<void> {
+	await $fetch('/api/ai/sessions/archive', {
+		method: 'POST',
+		body: { id: item.id, project: item.project }
+	})
+	await Promise.all([refresh(), refreshArchive()])
+}
+
+async function handleDeletePermanently(item: { id: string; project: string }): Promise<void> {
+	await $fetch('/api/ai/sessions/archive', {
+		method: 'DELETE',
+		body: { id: item.id, project: item.project }
+	})
+	await refreshArchive()
+}
+
+async function handleEmptyTrash(): Promise<void> {
+	await $fetch('/api/ai/sessions/archive', { method: 'DELETE' })
+	await refreshArchive()
 }
 </script>
 
@@ -246,6 +266,7 @@ function cancelDelete(): void {
 							color="error"
 							variant="ghost"
 							size="xs"
+							@click="handleEmptyTrash"
 						/>
 					</div>
 
@@ -268,6 +289,7 @@ function cancelDelete(): void {
 								color="neutral"
 								variant="ghost"
 								size="xs"
+								@click="handleRestore(item)"
 							/>
 							<UButton
 								icon="i-lucide-x"
@@ -275,6 +297,7 @@ function cancelDelete(): void {
 								variant="ghost"
 								size="xs"
 								title="Delete permanently"
+								@click="handleDeletePermanently(item)"
 							/>
 						</div>
 					</div>

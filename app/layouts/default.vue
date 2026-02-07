@@ -44,7 +44,7 @@ const links_main: NavigationMenuItem[] = [{
 }, {
 	label: 'Sessions',
 	icon: 'i-lucide-clock',
-	to: '/sessions',
+	to: '/ai/sessions',
 	onSelect: () => { open.value = false }
 }, {
 	label: 'Hooks',

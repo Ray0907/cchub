@@ -196,9 +196,20 @@ const list_suggestions = [
 
 							<!-- Recent Sessions -->
 							<div v-if="list_sessions && list_sessions.length > 0" class="text-left space-y-3">
-								<h3 class="text-xs font-medium text-dimmed uppercase tracking-wider">
-									Recent Sessions
-								</h3>
+								<div class="flex items-center justify-between">
+									<h3 class="text-xs font-medium text-dimmed uppercase tracking-wider">
+										Recent Sessions
+										<UBadge color="neutral" variant="subtle" size="xs" class="ml-2">
+											{{ data_sessions?.count_total ?? 0 }}
+										</UBadge>
+									</h3>
+									<NuxtLink
+										to="/ai/sessions"
+										class="text-xs text-primary hover:underline"
+									>
+										Manage all
+									</NuxtLink>
+								</div>
 								<div class="space-y-1">
 									<div
 										v-for="session in list_sessions.slice(0, 8)"
