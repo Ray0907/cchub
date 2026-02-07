@@ -1,120 +1,100 @@
-# CC-Hub
+# CC Hub
 
-**Claude Code Web 管理平台** — 用 GUI 管理你的 Claude Code sessions。
+Web dashboard for managing Claude Code configuration, sessions, and settings.
 
-## 為什麼需要這個？
+> **Requires an active [Claude Pro/Team/Enterprise subscription](https://claude.ai/pricing) with Claude Code access.** The AI assistant feature uses the Claude Agent SDK which authenticates through your Claude Code CLI login.
 
-Claude Code CLI 很強，但有些事情用 GUI 更順：
-- 📋 **總覽** — 一眼看到所有 sessions，不用 `ls ~/.claude/projects`
-- 🔍 **搜尋** — 找那個「上週討論 auth 的對話」
-- 🗑️ **管理** — 刪除、整理、不讓 sessions 無限膨脹
-- 🔄 **同步** — Web 編輯 = CLI 同步，無縫切換
+## Why?
 
-## 功能
+Claude Code CLI is powerful, but some tasks are easier with a GUI:
+- **Overview** — See all sessions at a glance instead of `ls ~/.claude/projects`
+- **Search** — Find that auth discussion from last week
+- **Manage** — Delete, archive, restore sessions without manual file wrangling
+- **Edit** — Modify agents, rules, hooks, MCP servers, and settings through a web UI
 
-### ✅ 已完成
+## Features
 
-| 功能 | 說明 |
-|------|------|
-| **Session 列表** | 顯示所有 sessions，按時間排序，顯示標題 + 專案 |
-| **Resume 對話** | 點擊繼續對話，狀態與 CLI `claude -r` 同步 |
-| **刪除 + Trash** | 刪除移到 `~/.claude/trash/`，保留 metadata 可還原 |
+| Feature | Description |
+|---------|-------------|
+| **Session Manager** | List, search, filter by project, with 300ms debounced search |
+| **Resume Sessions** | Click to continue a conversation, syncs with CLI `claude -r` |
+| **Archive / Trash** | Soft-delete to `~/.claude/trash/`, restore or permanently delete |
+| **Config Dashboard** | Browse and edit agents, rules, hooks, MCP servers, commands, plugins, settings |
+| **CLAUDE.md Editor** | Edit your project instructions with live markdown preview |
+| **AI Assistant** | Integrated web Claude Code with full tool access |
+| **Auth Middleware** | Per-start random token, httpOnly cookie, Bearer header support |
 
-### 🚧 開發中
+## Tech Stack
 
-| 功能 | 優先度 | 說明 |
-|------|--------|------|
-| **開新 Session** | 🔴 高 | 從 Web 開始新對話，選擇 working directory |
-| **搜尋對話** | 🔴 高 | 全文搜尋歷史對話內容 |
-| **Project 分組** | 🟡 中 | 按專案資料夾分組顯示 |
-| **Session 重命名** | 🟡 中 | 自訂標題，不只用第一句話 |
-| **Token 統計** | 🟢 低 | 顯示用量、估算成本 |
-| **Trash 還原** | 🟢 低 | 從垃圾桶救回誤刪 session |
-| **匯出對話** | 🟢 低 | Markdown / JSON 匯出 |
+- **Frontend**: Nuxt 3 + Nuxt UI + VueUse
+- **Backend**: Nitro server with `~/.claude/` filesystem APIs
+- **AI**: `@anthropic-ai/claude-agent-sdk` with SSE streaming
+- **Auth**: Random token per server start, cookie-based for browser, Bearer for scripts
 
-## 技術架構
+## Project Structure
 
 ```
 cc-hub/
-├── app/                    # Nuxt frontend
-│   ├── pages/ai.vue        # 主頁面
-│   └── composables/
-│       └── useAiChat.ts    # Chat 狀態管理 + resume
+├── app/
+│   ├── pages/
+│   │   ├── ai/index.vue          # Full-page Claude Code
+│   │   ├── ai/sessions.vue       # Session manager
+│   │   └── ...                   # Config dashboard pages
+│   ├── composables/useAiChat.ts  # Chat state + SSE streaming
+│   └── utils/format.ts           # Shared formatting utilities
 ├── server/
-│   └── api/ai/
-│       ├── sessions.get.ts       # GET /api/ai/sessions
-│       └── sessions/[id].get.ts  # GET /api/ai/sessions/:id
-│       └── sessions/[id].delete.ts # DELETE /api/ai/sessions/:id
-└── README.md
+│   ├── api/ai/
+│   │   ├── chat.post.ts          # AI chat endpoint (SSE)
+│   │   ├── sessions.get.ts       # Session list + search
+│   │   └── sessions/             # Session CRUD + archive
+│   ├── api/                      # Config CRUD endpoints
+│   ├── middleware/api-auth.ts     # Auth middleware
+│   └── utils/                    # Path guard, frontmatter parser, etc.
+└── public/favicon.svg
 ```
 
-### 資料位置
+## Data Layout
 
-| 路徑 | 用途 |
-|------|------|
-| `~/.claude/projects/` | Claude Code 原生 session 儲存位置 |
-| `~/.claude/trash/` | 刪除的 sessions（含 .meta.json） |
+| Path | Purpose |
+|------|---------|
+| `~/.claude/projects/` | Claude Code session storage (`.jsonl` files) |
+| `~/.claude/trash/` | Archived sessions with `.meta.json` for restore |
+| `~/.claude/agents/` | Agent definitions (`.md` with frontmatter) |
+| `~/.claude/rules/` | Custom rules |
+| `~/.claude/settings.json` | Global settings |
+| `~/.claude/mcp.json` | MCP server configuration |
 
-### Session 結構
-
-每個 session 是一個 `.jsonl` 檔：
-```
-~/.claude/projects/{project-path}/{session-id}.jsonl
-```
-
-每行是一個 JSON entry：
-```jsonl
-{"type":"user","message":{"role":"user","content":"hi"},...}
-{"type":"assistant","message":{"role":"assistant","content":"Hello!"},...}
-```
-
-## 開發
+## Getting Started
 
 ```bash
-# 安裝
 pnpm install
-
-# 開發
 pnpm dev
-
-# 開啟 http://localhost:3000/ai
+# Open http://127.0.0.1:3200
 ```
 
-## 與 CLI 的關係
+The auth token is printed to the console on startup for programmatic access (curl, scripts).
 
-CC-Hub **不取代** Claude Code CLI，而是互補：
+## Relationship with Claude Code CLI
 
-| 場景 | 用什麼 |
-|------|--------|
-| 寫 code、pair programming | CLI（在 terminal 最順） |
-| 找舊對話、管理 sessions | CC-Hub |
-| 刪除 / 整理 | CC-Hub |
-| 快速開始新專案 | 都可以 |
+CC Hub **complements** the CLI — it doesn't replace it.
 
-**同步機制**：兩邊讀寫同一批 `.jsonl` 檔案，天然同步。
+| Scenario | Use |
+|----------|-----|
+| Coding, pair programming | CLI (native terminal experience) |
+| Finding old conversations | CC Hub |
+| Managing sessions, bulk cleanup | CC Hub |
+| Editing config files | CC Hub or CLI |
 
-## Roadmap
+Both read/write the same `~/.claude/` files — naturally in sync.
 
-### Phase 1: Core（目前）
-- [x] Session list
-- [x] Resume session
-- [x] Delete + Trash
-- [ ] New session
-- [ ] Search
+## Security
 
-### Phase 2: Organization
-- [ ] Project grouping
-- [ ] Session rename
-- [ ] Tags / favorites
-
-### Phase 3: Insights
-- [ ] Token usage stats
-- [ ] Cost estimation
-- [ ] Conversation export
-
-### Phase 4: Collaboration（未定）
-- [ ] Share session（read-only link）
-- [ ] Team workspace
+- All `/api/**` routes require authentication (cookie or Bearer token)
+- Path traversal protection via `resolveClaudePath` + `safeJoin` + `assertSafeSegment`
+- Error messages sanitized (no filesystem path leakage)
+- `gray-matter` JS eval engine disabled
+- Agent SDK env vars restricted to safe allowlist
+- CORS disabled on API routes
 
 ## License
 

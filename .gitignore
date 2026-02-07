@@ -15,6 +15,10 @@ logs
 
 # Misc
 .DS_Store
+docs/
+*.local.md
+instruct.txt
+plan.md
 .fleet
 .idea
 
