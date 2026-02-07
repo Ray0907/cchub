@@ -1,4 +1,4 @@
-import { resolve, join } from 'node:path'
+import { resolve } from 'node:path'
 import { createError } from 'h3'
 
 export function assertPathSafe(path_target: string): void {

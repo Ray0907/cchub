@@ -92,26 +92,8 @@ async function confirmDelete(session: { id: string; project: string }): Promise<
 
 const label_cwd = computed(() => {
 	if (!path_cwd.value) return '~/.claude/'
-	const home = path_cwd.value.replace(/^\/Users\/[^/]+/, '~')
-	return home.length > 40 ? '...' + home.slice(-37) : home
+	return formatCwd(path_cwd.value, 40)
 })
-
-function formatCwd(cwd: string): string {
-	const home = cwd.replace(/^\/Users\/[^/]+/, '~')
-	return home.length > 35 ? '...' + home.slice(-32) : home
-}
-
-function formatTimeAgo(iso: string): string {
-	const diff = Date.now() - new Date(iso).getTime()
-	const minutes = Math.floor(diff / 60000)
-	if (minutes < 1) return 'just now'
-	if (minutes < 60) return `${minutes}m ago`
-	const hours = Math.floor(minutes / 60)
-	if (hours < 24) return `${hours}h ago`
-	const days = Math.floor(hours / 24)
-	if (days < 7) return `${days}d ago`
-	return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
 
 const list_suggestions = [
 	{ icon: 'i-lucide-file-search', label: 'Explore this project', prompt: 'Give me an overview of this project structure and key files' },

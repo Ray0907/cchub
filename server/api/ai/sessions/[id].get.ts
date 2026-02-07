@@ -14,9 +14,8 @@ export default defineApiHandler(async (event) => {
 	assertSafeSegment(id, 'session ID')
 
 	const projects_dir = resolveClaudePath('projects')
-	let jsonl_path: string | null = null
-	let dirs: string[]
 
+	let dirs: string[]
 	try {
 		dirs = await readdir(projects_dir)
 	}
@@ -29,7 +28,6 @@ export default defineApiHandler(async (event) => {
 		const candidate = safeJoin(projects_dir, dir, `${id}.jsonl`)
 		try {
 			raw = await readFile(candidate, 'utf-8')
-			jsonl_path = candidate
 			break
 		}
 		catch {
@@ -37,16 +35,17 @@ export default defineApiHandler(async (event) => {
 		}
 	}
 
-	if (!jsonl_path || !raw) {
+	if (!raw) {
 		throw createError({ statusCode: 404, statusMessage: 'Session not found' })
 	}
+
 	const lines = raw.split('\n').filter(l => l.trim())
 
 	let cwd = ''
 	const messages: ConversationMessage[] = []
 
 	for (const line of lines) {
-		let entry: any
+		let entry: Record<string, unknown>
 		try {
 			entry = JSON.parse(line)
 		}
@@ -54,43 +53,37 @@ export default defineApiHandler(async (event) => {
 			continue
 		}
 
-		// Extract cwd from any entry that has it
-		if (entry.cwd && !cwd) {
+		if (!cwd && typeof entry.cwd === 'string') {
 			cwd = entry.cwd
 		}
 
 		if (entry.type === 'user') {
-			// Skip meta/system messages
 			if (entry.isMeta) continue
 
-			const msg = entry.message
+			const msg = entry.message as { role?: string; content?: unknown } | undefined
 			if (!msg || msg.role !== 'user') continue
 
-			// Skip tool_result messages (these are tool outputs, not user text)
-			const content = msg.content
-			if (Array.isArray(content) && content.length > 0 && content[0].type === 'tool_result') {
+			// Skip tool_result messages (tool outputs, not user text)
+			if (Array.isArray(msg.content) && msg.content.length > 0 && msg.content[0].type === 'tool_result') {
 				continue
 			}
 
-			const text = extractContent(content)
+			const text = extractTextContent(msg.content)
 			if (text) {
 				messages.push({
 					role: 'user',
 					content: text,
-					timestamp: entry.timestamp || ''
+					timestamp: (entry.timestamp as string) || ''
 				})
 			}
 		}
 		else if (entry.type === 'assistant') {
-			const msg = entry.message
+			const msg = entry.message as { role?: string; content?: unknown } | undefined
 			if (!msg || msg.role !== 'assistant') continue
+			if (!Array.isArray(msg.content)) continue
 
-			const content = msg.content
-			if (!Array.isArray(content)) continue
-
-			// Only extract text blocks (skip tool_use blocks)
 			const text_parts: string[] = []
-			for (const block of content) {
+			for (const block of msg.content as Array<{ type: string; text?: string }>) {
 				if (block.type === 'text' && block.text) {
 					text_parts.push(block.text)
 				}
@@ -101,7 +94,7 @@ export default defineApiHandler(async (event) => {
 				messages.push({
 					role: 'assistant',
 					content: text,
-					timestamp: entry.timestamp || ''
+					timestamp: (entry.timestamp as string) || ''
 				})
 			}
 		}
@@ -109,19 +102,3 @@ export default defineApiHandler(async (event) => {
 
 	return { id, cwd, messages }
 })
-
-function extractContent(content: unknown): string {
-	if (typeof content === 'string') {
-		return content
-	}
-	if (Array.isArray(content)) {
-		const parts: string[] = []
-		for (const block of content) {
-			if (block.type === 'text' && block.text) {
-				parts.push(block.text)
-			}
-		}
-		return parts.join('\n')
-	}
-	return ''
-}

@@ -1,6 +1,4 @@
 import { rename, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
-import { createReadStream } from 'node:fs'
-import { createInterface } from 'node:readline'
 
 export default defineApiHandler(async (event) => {
 	const id = getRouterParam(event, 'id')
@@ -16,7 +14,6 @@ export default defineApiHandler(async (event) => {
 	const projects_dir = resolveClaudePath('projects')
 	const trash_dir = resolveClaudePath('trash')
 
-	// Ensure trash directory exists
 	await mkdir(trash_dir, { recursive: true })
 
 	// Find the JSONL file
@@ -25,15 +22,10 @@ export default defineApiHandler(async (event) => {
 
 	if (project) {
 		const candidate = safeJoin(projects_dir, project, `${id}.jsonl`)
-		try {
-			const info = await stat(candidate)
-			if (info.isFile()) {
-				source_path = candidate
-				source_project = project
-			}
-		}
-		catch {
-			// Not found at expected location
+		const info = await stat(candidate).catch(() => null)
+		if (info?.isFile()) {
+			source_path = candidate
+			source_project = project
 		}
 	}
 
@@ -48,16 +40,11 @@ export default defineApiHandler(async (event) => {
 
 		for (const dir of dirs) {
 			const candidate = safeJoin(projects_dir, dir, `${id}.jsonl`)
-			try {
-				const info = await stat(candidate)
-				if (info.isFile()) {
-					source_path = candidate
-					source_project = dir
-					break
-				}
-			}
-			catch {
-				continue
+			const info = await stat(candidate).catch(() => null)
+			if (info?.isFile()) {
+				source_path = candidate
+				source_project = dir
+				break
 			}
 		}
 	}
@@ -71,7 +58,7 @@ export default defineApiHandler(async (event) => {
 	await mkdir(trash_project_dir, { recursive: true })
 
 	// Extract title before moving file
-	const title = await extractTitle(source_path)
+	const title = await extractSessionTitle(source_path).catch(() => '')
 
 	// Write metadata so we know where to restore
 	const meta_path = safeJoin(trash_project_dir, `${id}.meta.json`)
@@ -89,70 +76,3 @@ export default defineApiHandler(async (event) => {
 
 	return { ok: true }
 })
-
-async function extractTitle(path_file: string): Promise<string> {
-	let count_lines = 0
-
-	const stream = createReadStream(path_file, { encoding: 'utf-8' })
-	const reader = createInterface({ input: stream })
-
-	try {
-		for await (const line of reader) {
-			if (++count_lines > 80) break
-			if (!line.trim()) continue
-
-			let entry: Record<string, unknown>
-			try {
-				entry = JSON.parse(line)
-			}
-			catch {
-				continue
-			}
-
-			if (entry.type === 'user' && !entry.isMeta) {
-				const msg = entry.message as { role?: string; content?: unknown } | undefined
-				if (msg?.role === 'user' && msg.content) {
-					const text = extractTextContent(msg.content)
-					if (text && text.length > 1 && !isSystemMessage(text)) {
-						return text.length > 100 ? text.slice(0, 100) + '...' : text
-					}
-				}
-			}
-		}
-	}
-	finally {
-		stream.destroy()
-	}
-
-	return ''
-}
-
-function isSystemMessage(text: string): boolean {
-	const prefixes = [
-		'<command-message>',
-		'<command-name>',
-		'<teammate-message',
-		'<local-command',
-		'<system-reminder>',
-		'<task-notification>',
-		'# Ralph Loop',
-	]
-	return prefixes.some(p => text.startsWith(p))
-}
-
-function extractTextContent(content: unknown): string {
-	if (typeof content === 'string') return content.trim()
-
-	if (Array.isArray(content)) {
-		for (const block of content) {
-			if (block && typeof block === 'object' && 'type' in block) {
-				const typed = block as { type: string; text?: string }
-				if (typed.type === 'text' && typeof typed.text === 'string') {
-					return typed.text.trim()
-				}
-			}
-		}
-	}
-
-	return ''
-}
