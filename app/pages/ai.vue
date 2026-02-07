@@ -14,9 +14,10 @@ const el_scroll = ref<HTMLElement | null>(null)
 const is_loading_session = ref(false)
 
 // Fetch recent sessions for the welcome screen
-const { data: list_sessions, refresh: refreshSessions } = useFetch('/api/ai/sessions', {
-	default: () => [] as Array<{ id: string; title: string; cwd: string; time_modified: string; project: string }>
+const { data: data_sessions, refresh: refreshSessions } = useFetch('/api/ai/sessions', {
+	default: () => ({ sessions: [], projects: [], count_total: 0, count_filtered: 0 })
 })
+const list_sessions = computed(() => data_sessions.value?.sessions ?? [])
 
 function scrollToBottom(): void {
 	nextTick(() => {

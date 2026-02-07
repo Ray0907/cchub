@@ -11,7 +11,12 @@ interface SessionEntry {
 	project: string
 }
 
-export default defineApiHandler(async () => {
+export default defineApiHandler(async (event) => {
+	const query = getQuery(event)
+	const filter_q = ((query.q as string) || '').toLowerCase()
+	const filter_project = (query.project as string) || ''
+	const limit_count = Math.min(Number(query.limit) || 50, 200)
+
 	const path_projects = resolveClaudePath('projects')
 
 	let list_project_dirs: string[]
@@ -19,7 +24,7 @@ export default defineApiHandler(async () => {
 		list_project_dirs = await readdir(path_projects)
 	}
 	catch {
-		return []
+		return { sessions: [], projects: [], count_total: 0, count_filtered: 0 }
 	}
 
 	const list_sessions: SessionEntry[] = []
@@ -70,7 +75,28 @@ export default defineApiHandler(async () => {
 
 	list_sessions.sort((a, b) => b.time_modified.localeCompare(a.time_modified))
 
-	return list_sessions.slice(0, 50)
+	let filtered = list_sessions
+
+	if (filter_q) {
+		filtered = filtered.filter(s =>
+			s.title.toLowerCase().includes(filter_q)
+			|| s.cwd.toLowerCase().includes(filter_q)
+			|| s.id.toLowerCase().includes(filter_q)
+		)
+	}
+
+	if (filter_project) {
+		filtered = filtered.filter(s => s.project === filter_project)
+	}
+
+	const list_projects = [...new Set(list_sessions.map(s => s.project))].sort()
+
+	return {
+		sessions: filtered.slice(0, limit_count),
+		projects: list_projects,
+		count_total: list_sessions.length,
+		count_filtered: filtered.length
+	}
 })
 
 async function extractSessionMeta(path_file: string): Promise<{ title: string; cwd: string }> {
