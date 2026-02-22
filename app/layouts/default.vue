@@ -64,6 +64,11 @@ const links_main: NavigationMenuItem[] = [{
 	to: '/plugins',
 	onSelect: () => { open.value = false }
 }, {
+	label: 'Context Health',
+	icon: 'i-lucide-heart-pulse',
+	to: '/context-health',
+	onSelect: () => { open.value = false }
+}, {
 	label: 'Plans',
 	icon: 'i-lucide-map',
 	to: '/plans',
