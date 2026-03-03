@@ -2,21 +2,11 @@ import type { FurnitureInstance, OfficeCharacter, SpriteData } from './types'
 import {
 	CHARACTER_SITTING_OFFSET,
 	CharacterState,
-	TILE_SIZE,
+	TILE_SIZE
 } from './types'
 import { getCharacterSpriteSet } from './characters'
 import { OFFICE_COLS, OFFICE_ROWS, TILE_MAP, getTileSprite } from './layout'
 import { getCachedSprite } from './spriteCache'
-
-export interface RenderState {
-	canvas: HTMLCanvasElement
-	ctx: CanvasRenderingContext2D
-	zoom: number
-	furniture: FurnitureInstance[]
-	characters: OfficeCharacter[]
-	selectedCharId: string | null
-	hoveredCharId: string | null
-}
 
 interface Renderable {
 	sprite: SpriteData
@@ -30,12 +20,24 @@ interface Renderable {
 /**
  * Render a complete frame of the office scene.
  */
-export function renderFrame(state: RenderState): void {
-	const { canvas, ctx, zoom, furniture, characters, selectedCharId, hoveredCharId } = state
-
+export function renderFrame(
+	ctx: CanvasRenderingContext2D,
+	canvasW: number,
+	canvasH: number,
+	zoom: number,
+	offsetX: number,
+	offsetY: number,
+	furniture: FurnitureInstance[],
+	characters: OfficeCharacter[],
+	selectedId: string | null,
+	hoveredId: string | null
+): void {
 	// ─── Clear ───────────────────────────────────────────────────
 	ctx.fillStyle = '#1a1a2e'
-	ctx.fillRect(0, 0, canvas.width, canvas.height)
+	ctx.fillRect(0, 0, canvasW, canvasH)
+
+	ctx.save()
+	ctx.translate(offsetX, offsetY)
 
 	// ─── Draw tile grid ──────────────────────────────────────────
 	for (let r = 0; r < OFFICE_ROWS; r++) {
@@ -55,7 +57,7 @@ export function renderFrame(state: RenderState): void {
 			sprite: f.sprite,
 			x: f.x,
 			y: f.y,
-			zY: f.zY,
+			zY: f.zY
 		})
 	}
 
@@ -69,8 +71,7 @@ export function renderFrame(state: RenderState): void {
 		if (char.state === CharacterState.TYPE) {
 			const frames = spriteSet.typing[char.dir]
 			sprite = frames[char.frame % frames.length]
-		}
-		else {
+		} else {
 			const frames = spriteSet.walk[char.dir]
 			sprite = frames[0] // idle = first walk frame
 		}
@@ -84,7 +85,7 @@ export function renderFrame(state: RenderState): void {
 			y: char.y + yOffset,
 			zY: char.y + TILE_SIZE, // sort by feet position
 			isCharacter: true,
-			charId: char.id,
+			charId: char.id
 		})
 	}
 
@@ -98,7 +99,7 @@ export function renderFrame(state: RenderState): void {
 		const dy = r.y * zoom
 
 		// Selection highlight (drawn behind the character sprite)
-		if (r.isCharacter && r.charId === selectedCharId) {
+		if (r.isCharacter && r.charId === selectedId) {
 			ctx.save()
 			ctx.globalAlpha = 0.3
 			ctx.fillStyle = '#FFD700'
@@ -110,14 +111,14 @@ export function renderFrame(state: RenderState): void {
 				4 * zoom,
 				0,
 				0,
-				Math.PI * 2,
+				Math.PI * 2
 			)
 			ctx.fill()
 			ctx.restore()
 		}
 
 		// Hover highlight
-		if (r.isCharacter && r.charId === hoveredCharId && r.charId !== selectedCharId) {
+		if (r.isCharacter && r.charId === hoveredId && r.charId !== selectedId) {
 			ctx.save()
 			ctx.globalAlpha = 0.2
 			ctx.fillStyle = '#FFFFFF'
@@ -129,7 +130,7 @@ export function renderFrame(state: RenderState): void {
 				3 * zoom,
 				0,
 				0,
-				Math.PI * 2,
+				Math.PI * 2
 			)
 			ctx.fill()
 			ctx.restore()
@@ -141,7 +142,7 @@ export function renderFrame(state: RenderState): void {
 	// ─── Name labels ─────────────────────────────────────────────
 	for (const char of characters) {
 		if (!char.isActive) continue
-		if (char.id !== selectedCharId && char.id !== hoveredCharId) continue
+		if (char.id !== selectedId && char.id !== hoveredId) continue
 
 		const spriteSet = getCharacterSpriteSet(char.palette)
 		if (!spriteSet) continue
@@ -173,9 +174,11 @@ export function renderFrame(state: RenderState): void {
 		ctx.restore()
 
 		// Text
-		ctx.fillStyle = char.id === selectedCharId ? '#FFD700' : '#FFFFFF'
+		ctx.fillStyle = char.id === selectedId ? '#FFD700' : '#FFFFFF'
 		ctx.fillText(char.name, labelX, labelY - padY)
 	}
+
+	ctx.restore()
 }
 
 /**
@@ -185,11 +188,16 @@ export function renderFrame(state: RenderState): void {
  * Checks characters in reverse z-order (topmost first).
  */
 export function hitTestCharacter(
-	mouseX: number,
-	mouseY: number,
-	state: RenderState,
+	cx: number,
+	cy: number,
+	zoom: number,
+	offsetX: number,
+	offsetY: number,
+	characters: OfficeCharacter[]
 ): string | null {
-	const { zoom, characters } = state
+	// Convert canvas coordinates to world coordinates
+	const worldX = cx - offsetX
+	const worldY = cy - offsetY
 
 	// Check in reverse order (front-to-back) so topmost character wins
 	const sorted = [...characters]
@@ -208,10 +216,10 @@ export function hitTestCharacter(
 		const charScreenH = spriteH * zoom
 
 		if (
-			mouseX >= charScreenX
-			&& mouseX < charScreenX + charScreenW
-			&& mouseY >= charScreenY
-			&& mouseY < charScreenY + charScreenH
+			worldX >= charScreenX
+			&& worldX < charScreenX + charScreenW
+			&& worldY >= charScreenY
+			&& worldY < charScreenY + charScreenH
 		) {
 			return char.id
 		}

@@ -2,7 +2,7 @@ export const TILE_SIZE = 16
 
 export const CharacterState = {
 	IDLE: 'idle',
-	TYPE: 'type',
+	TYPE: 'type'
 } as const
 export type CharacterState = (typeof CharacterState)[keyof typeof CharacterState]
 
@@ -10,7 +10,7 @@ export const Direction = {
 	DOWN: 0,
 	LEFT: 1,
 	RIGHT: 2,
-	UP: 3,
+	UP: 3
 } as const
 export type Direction = (typeof Direction)[keyof typeof Direction]
 

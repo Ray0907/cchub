@@ -31,7 +31,7 @@ let loaded = false
 function extractFrame(
 	imageData: ImageData,
 	frameCol: number,
-	dirRow: number,
+	dirRow: number
 ): SpriteData {
 	const sprite: SpriteData = []
 	const startX = frameCol * FRAME_W
@@ -50,8 +50,7 @@ function extractFrame(
 
 			if (a < 128) {
 				row.push('')
-			}
-			else {
+			} else {
 				const hex = '#'
 					+ r.toString(16).padStart(2, '0')
 					+ g.toString(16).padStart(2, '0')
@@ -115,14 +114,14 @@ function loadCharacterPNG(index: number): Promise<CharacterSpriteSet> {
 					[Direction.DOWN]: walkCycle(walkDown),
 					[Direction.UP]: walkCycle(walkUp),
 					[Direction.LEFT]: walkCycle(walkLeft),
-					[Direction.RIGHT]: walkCycle(walkRight),
+					[Direction.RIGHT]: walkCycle(walkRight)
 				},
 				typing: {
 					[Direction.DOWN]: typeDown,
 					[Direction.UP]: typeUp,
 					[Direction.LEFT]: typeLeft,
-					[Direction.RIGHT]: typeRight,
-				},
+					[Direction.RIGHT]: typeRight
+				}
 			}
 
 			resolve(set)
@@ -148,7 +147,7 @@ export async function loadAllCharacters(): Promise<void> {
 			})
 			.catch((err) => {
 				console.warn(`[office] Could not load char_${i}.png:`, err.message)
-			}),
+			})
 	)
 
 	await Promise.all(promises)

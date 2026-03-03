@@ -7,7 +7,7 @@ import {
 	FLOOR_SPRITE,
 	MONITOR_SPRITE,
 	PLANT_SPRITE,
-	WALL_SPRITE,
+	WALL_SPRITE
 } from './sprites'
 
 // ─── Office dimensions (tiles) ───────────────────────────────────
@@ -29,8 +29,7 @@ export const TILE_MAP: number[][] = (() => {
 		for (let c = 0; c < OFFICE_COLS; c++) {
 			if (r === 0 || r === OFFICE_ROWS - 1 || c === 0 || c === OFFICE_COLS - 1) {
 				row.push(WALL)
-			}
-			else {
+			} else {
 				row.push(FLOOR)
 			}
 		}
@@ -55,7 +54,7 @@ export const AGENT_SEATS: Seat[] = [
 	// Bottom row
 	{ col: 4, row: 8, facingDir: Direction.UP },
 	{ col: 8, row: 8, facingDir: Direction.UP },
-	{ col: 13, row: 8, facingDir: Direction.UP },
+	{ col: 13, row: 8, facingDir: Direction.UP }
 ]
 
 /** Return the sprite for a tile type. */
@@ -78,7 +77,7 @@ export function buildFurniture(): FurnitureInstance[] {
 			sprite,
 			x,
 			y,
-			zY: y + (sprite.length * 1) + zYOffset, // depth sort by bottom edge
+			zY: y + (sprite.length * 1) + zYOffset // depth sort by bottom edge
 		})
 	}
 

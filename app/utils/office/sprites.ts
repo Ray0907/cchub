@@ -157,11 +157,9 @@ export const FLOOR_SPRITE: SpriteData = (() => {
 	for (let r = 0; r < 16; r++) {
 		if (r === 0 || r === 8) {
 			rows.push(Array(16).fill('#A88D66'))
-		}
-		else if (r < 8) {
+		} else if (r < 8) {
 			rows.push(Array(16).fill('#C4A882'))
-		}
-		else {
+		} else {
 			rows.push(Array(16).fill('#B89B74'))
 		}
 	}
@@ -174,11 +172,9 @@ export const WALL_SPRITE: SpriteData = (() => {
 	for (let r = 0; r < 16; r++) {
 		if (r < 5) {
 			rows.push(Array(16).fill('#7B8B9B'))
-		}
-		else if (r < 11) {
+		} else if (r < 11) {
 			rows.push(Array(16).fill('#6B7B8B'))
-		}
-		else {
+		} else {
 			rows.push(Array(16).fill('#5A6A7A'))
 		}
 	}
