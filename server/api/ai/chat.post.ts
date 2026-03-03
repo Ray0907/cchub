@@ -2,17 +2,18 @@ import { query } from '@anthropic-ai/claude-agent-sdk'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import { resolve } from 'node:path'
 import { homedir } from 'node:os'
-import { stat } from 'node:fs/promises'
+import { stat, readFile } from 'node:fs/promises'
 
 export default defineEventHandler(async (event) => {
 	const body = await readBody(event)
 	const config = useRuntimeConfig()
 
-	const { prompt, id_session, context, cwd } = body as {
+	const { prompt, id_session, context, cwd, agent } = body as {
 		prompt: string
 		id_session?: string
 		context?: string
 		cwd?: string
+		agent?: string
 	}
 
 	if (!prompt?.trim()) {
@@ -35,6 +36,22 @@ export default defineEventHandler(async (event) => {
 		}
 	}
 
+	// Agent-specific system prompt
+	let agent_system_prompt = ''
+	if (agent?.trim()) {
+		try {
+			const path_agent = resolveClaudePath('agents', `${agent.trim()}.md`)
+			const agent_content = await readFile(path_agent, 'utf-8')
+			const parsed = parseAgentFrontmatter(agent_content)
+			agent_system_prompt = parsed.content_body
+				? `You are ${parsed.name_agent || agent}. ${parsed.description || ''}\n\n${parsed.content_body}`
+				: `You are ${parsed.name_agent || agent}. ${parsed.description || ''}`
+		}
+		catch {
+			// Agent file not found, use default prompt
+		}
+	}
+
 	setResponseHeaders(event, {
 		'Content-Type': 'text/event-stream',
 		'Cache-Control': 'no-cache',
@@ -44,15 +61,16 @@ export default defineEventHandler(async (event) => {
 	const response = event.node.res
 
 	const is_claude_home = working_dir === getClaudeHome()
-	const system_context = is_claude_home
-		? `You are an AI assistant embedded in CC Hub, a dashboard for managing Claude Code configuration files located in ~/.claude/.
+	const system_context = agent_system_prompt
+		|| (is_claude_home
+			? `You are an AI assistant embedded in CC Hub, a dashboard for managing Claude Code configuration files located in ~/.claude/.
 You can help users understand their configuration, suggest improvements, and explain what different settings do.
 You can read, edit, and write files. Use markdown formatting when appropriate.
 ${context ? `\nThe user is currently viewing: ${context}` : ''}`
-		: `You are an AI coding assistant embedded in CC Hub, working in the directory: ${working_dir}
+			: `You are an AI coding assistant embedded in CC Hub, working in the directory: ${working_dir}
 You have full Claude Code capabilities: you can read, search, edit, and write files, and run shell commands.
 Help the user with their codebase. Use markdown formatting when appropriate.
-${context ? `\nThe user is currently viewing: ${context}` : ''}`
+${context ? `\nThe user is currently viewing: ${context}` : ''}`)
 
 	function writeSse(data: string): void {
 		response.write(`data: ${data}\n\n`)
