@@ -42,8 +42,10 @@ export function getCachedSprite(sprite: SpriteData, zoom: number): HTMLCanvasEle
 	ctx.imageSmoothingEnabled = false
 
 	for (let r = 0; r < rows; r++) {
+		const row = sprite[r]
+		if (!row) continue
 		for (let c = 0; c < cols; c++) {
-			const color = sprite[r][c]
+			const color = row[c]
 			if (!color) continue
 			ctx.fillStyle = color
 			ctx.fillRect(c * zoom, r * zoom, zoom, zoom)

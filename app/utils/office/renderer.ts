@@ -18,6 +18,25 @@ interface Renderable {
 }
 
 /**
+ * Compute the interpolated draw position for a character.
+ * During WALK state, lerp between current tile and next path tile.
+ */
+function getCharacterDrawPos(char: OfficeCharacter): { x: number; y: number } {
+	if (char.state === CharacterState.WALK && char.path.length > 0) {
+		const next = char.path[0]!
+		const fromX = char.tileCol * TILE_SIZE
+		const fromY = char.tileRow * TILE_SIZE
+		const toX = next.col * TILE_SIZE
+		const toY = next.row * TILE_SIZE
+		return {
+			x: fromX + (toX - fromX) * char.moveProgress,
+			y: fromY + (toY - fromY) * char.moveProgress,
+		}
+	}
+	return { x: char.tileCol * TILE_SIZE, y: char.tileRow * TILE_SIZE }
+}
+
+/**
  * Render a complete frame of the office scene.
  */
 export function renderFrame(
@@ -41,8 +60,10 @@ export function renderFrame(
 
 	// ─── Draw tile grid ──────────────────────────────────────────
 	for (let r = 0; r < OFFICE_ROWS; r++) {
+		const row = TILE_MAP[r]
+		if (!row) continue
 		for (let c = 0; c < OFFICE_COLS; c++) {
-			const tileType = TILE_MAP[r][c]
+			const tileType = row[c] ?? 0
 			const tileSprite = getTileSprite(tileType)
 			const cached = getCachedSprite(tileSprite, zoom)
 			ctx.drawImage(cached, c * TILE_SIZE * zoom, r * TILE_SIZE * zoom)
@@ -62,28 +83,38 @@ export function renderFrame(
 	}
 
 	for (const char of characters) {
-		if (!char.isActive) continue
-
 		const spriteSet = getCharacterSpriteSet(char.palette)
 		if (!spriteSet) continue
 
-		let sprite: SpriteData
-		if (char.state === CharacterState.TYPE) {
-			const frames = spriteSet.typing[char.dir]
-			sprite = frames[char.frame % frames.length]
-		} else {
-			const frames = spriteSet.walk[char.dir]
-			sprite = frames[0] // idle = first walk frame
-		}
+		const walkFrames = spriteSet.walk[char.dir]
+		const typingFrames = spriteSet.typing[char.dir]
+		let sprite: SpriteData | undefined
 
-		// Characters sit slightly offset upward when at their seat
-		const yOffset = -CHARACTER_SITTING_OFFSET
+		if (char.state === CharacterState.TYPE && typingFrames) {
+			sprite = typingFrames[char.frame % typingFrames.length]
+		} else if (char.state === CharacterState.WALK && walkFrames) {
+			sprite = walkFrames[char.frame % walkFrames.length]
+		} else if (walkFrames) {
+			// IDLE: use first walk frame (standing pose)
+			sprite = walkFrames[0]
+		}
+		if (!sprite) continue
+
+		const pos = getCharacterDrawPos(char)
+
+		// Only apply sitting offset when at seat and not walking
+		const at_seat = char.tileCol === char.seat.col && char.tileRow === char.seat.row
+		const yOffset = (char.state !== CharacterState.WALK && at_seat) ? -CHARACTER_SITTING_OFFSET : 0
+
+		// Center the 32px-wide sprite on the 16px tile
+		const spriteW = sprite[0]?.length ?? TILE_SIZE
+		const xOffset = -(spriteW - TILE_SIZE) / 2
 
 		renderables.push({
 			sprite,
-			x: char.x,
-			y: char.y + yOffset,
-			zY: char.y + TILE_SIZE, // sort by feet position
+			x: pos.x + xOffset,
+			y: pos.y + yOffset,
+			zY: pos.y + TILE_SIZE,
 			isCharacter: true,
 			charId: char.id
 		})
@@ -141,14 +172,17 @@ export function renderFrame(
 
 	// ─── Name labels ─────────────────────────────────────────────
 	for (const char of characters) {
-		if (!char.isActive) continue
 		if (char.id !== selectedId && char.id !== hoveredId) continue
 
 		const spriteSet = getCharacterSpriteSet(char.palette)
 		if (!spriteSet) continue
 
-		const labelX = char.x * zoom + (TILE_SIZE * zoom) / 2
-		const labelY = (char.y - CHARACTER_SITTING_OFFSET) * zoom - 4 * zoom
+		const pos = getCharacterDrawPos(char)
+		const at_seat = char.tileCol === char.seat.col && char.tileRow === char.seat.row
+		const yOff = (char.state !== CharacterState.WALK && at_seat) ? -CHARACTER_SITTING_OFFSET : 0
+
+		const labelX = pos.x * zoom + (TILE_SIZE * zoom) / 2
+		const labelY = (pos.y + yOff) * zoom - 4 * zoom
 
 		const fontSize = Math.max(9, Math.round(10 * zoom))
 		ctx.font = `bold ${fontSize}px "SF Mono", "Fira Code", monospace`
@@ -184,8 +218,6 @@ export function renderFrame(
 /**
  * Hit-test: given mouse coordinates on the canvas, return the character ID
  * at that position, or null if no character is there.
- *
- * Checks characters in reverse z-order (topmost first).
  */
 export function hitTestCharacter(
 	cx: number,
@@ -195,24 +227,31 @@ export function hitTestCharacter(
 	offsetY: number,
 	characters: OfficeCharacter[]
 ): string | null {
-	// Convert canvas coordinates to world coordinates
 	const worldX = cx - offsetX
 	const worldY = cy - offsetY
 
-	// Check in reverse order (front-to-back) so topmost character wins
 	const sorted = [...characters]
-		.filter(c => c.isActive && getCharacterSpriteSet(c.palette))
-		.sort((a, b) => (b.y + TILE_SIZE) - (a.y + TILE_SIZE))
+		.filter(c => getCharacterSpriteSet(c.palette) !== null)
+		.sort((a, b) => {
+			const posA = getCharacterDrawPos(a)
+			const posB = getCharacterDrawPos(b)
+			return (posB.y + TILE_SIZE) - (posA.y + TILE_SIZE)
+		})
 
 	for (const char of sorted) {
 		const spriteSet = getCharacterSpriteSet(char.palette)
 		if (!spriteSet) continue
 
-		const yOffset = -CHARACTER_SITTING_OFFSET
-		const spriteH = 32 // character sprites are 32px tall
-		const charScreenX = char.x * zoom
-		const charScreenY = (char.y + yOffset) * zoom
-		const charScreenW = TILE_SIZE * zoom
+		const pos = getCharacterDrawPos(char)
+		const at_seat = char.tileCol === char.seat.col && char.tileRow === char.seat.row
+		const yOffset = (char.state !== CharacterState.WALK && at_seat) ? -CHARACTER_SITTING_OFFSET : 0
+
+		const spriteW = 32
+		const spriteH = 32
+		const xOffset = -(spriteW - TILE_SIZE) / 2
+		const charScreenX = (pos.x + xOffset) * zoom
+		const charScreenY = (pos.y + yOffset) * zoom
+		const charScreenW = spriteW * zoom
 		const charScreenH = spriteH * zoom
 
 		if (

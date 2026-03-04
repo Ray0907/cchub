@@ -192,7 +192,7 @@ onUnmounted(() => {
 			v-if="is_loaded && !has_sprites"
 			class="absolute top-2 right-2"
 		>
-			<UBadge color="warning" variant="subtle" size="xs">
+			<UBadge color="neutral" variant="subtle" size="xs">
 				<UIcon name="i-lucide-alert-triangle" class="size-3" />
 				No sprites loaded
 			</UBadge>

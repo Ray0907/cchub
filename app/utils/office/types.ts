@@ -2,6 +2,7 @@ export const TILE_SIZE = 16
 
 export const CharacterState = {
 	IDLE: 'idle',
+	WALK: 'walk',
 	TYPE: 'type'
 } as const
 export type CharacterState = (typeof CharacterState)[keyof typeof CharacterState]
@@ -37,6 +38,11 @@ export interface OfficeCharacter {
 	frameTimer: number
 	isActive: boolean
 	seat: Seat
+	path: { col: number; row: number }[]
+	moveProgress: number
+	wanderTimer: number
+	wander_count: number
+	wander_limit: number
 }
 
 export interface FurnitureInstance {
@@ -47,5 +53,7 @@ export interface FurnitureInstance {
 }
 
 export const TYPE_FRAME_DURATION = 0.3
+export const WALK_SPEED = 60
+export const WALK_FRAME_DURATION = 0.15
 export const MAX_DELTA_TIME = 0.1
 export const CHARACTER_SITTING_OFFSET = 6

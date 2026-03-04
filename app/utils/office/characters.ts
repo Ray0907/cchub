@@ -17,9 +17,9 @@ export interface CharacterSpriteSet {
 }
 
 const NUM_CHARACTERS = 6
-const PNG_WIDTH = 112
+const PNG_WIDTH = 224
 const PNG_HEIGHT = 96
-const FRAME_W = 16
+const FRAME_W = 32
 const FRAME_H = 32
 
 const CHARACTER_BASE_PATH = '/assets/office/characters'
@@ -43,10 +43,10 @@ function extractFrame(
 			const px = startX + x
 			const py = startY + y
 			const idx = (py * PNG_WIDTH + px) * 4
-			const r = imageData.data[idx]
-			const g = imageData.data[idx + 1]
-			const b = imageData.data[idx + 2]
-			const a = imageData.data[idx + 3]
+			const r = imageData.data[idx] ?? 0
+			const g = imageData.data[idx + 1] ?? 0
+			const b = imageData.data[idx + 2] ?? 0
+			const a = imageData.data[idx + 3] ?? 0
 
 			if (a < 128) {
 				row.push('')
@@ -107,7 +107,7 @@ function loadCharacterPNG(index: number): Promise<CharacterSpriteSet> {
 			const typeLeft = typeRight.map(flipHorizontal)
 
 			// Walk cycle: [0, 1, 2, 1]
-			const walkCycle = (frames: SpriteData[]) => [frames[0], frames[1], frames[2], frames[1]]
+			const walkCycle = (frames: SpriteData[]): SpriteData[] => [frames[0]!, frames[1]!, frames[2]!, frames[1]!]
 
 			const set: CharacterSpriteSet = {
 				walk: {
@@ -157,7 +157,7 @@ export async function loadAllCharacters(): Promise<void> {
 /** Get the sprite set for a character palette (0-5), or null if not loaded. */
 export function getCharacterSpriteSet(palette: number): CharacterSpriteSet | null {
 	if (palette < 0 || palette >= NUM_CHARACTERS) return null
-	return characterSets[palette]
+	return characterSets[palette] ?? null
 }
 
 /** Check if at least one character sprite has been loaded. */

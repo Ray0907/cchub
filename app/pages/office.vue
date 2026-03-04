@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TILE_SIZE, CharacterState, Direction, type OfficeCharacter } from '~/utils/office/types'
+import { TILE_SIZE, CharacterState, type OfficeCharacter } from '~/utils/office/types'
 import { AGENT_SEATS } from '~/utils/office/layout'
 
 useSeoMeta({ title: 'Office' })
@@ -18,20 +18,26 @@ watch(data_agents, (agents) => {
 	for (let i = 0; i < agents.length && i < AGENT_SEATS.length; i++) {
 		const agent = agents[i]
 		const seat = AGENT_SEATS[i]
+		if (!agent || !seat) continue
 		const ch: OfficeCharacter = {
 			id: agent.name_file,
 			name: agent.name_agent || agent.name_file,
 			state: CharacterState.IDLE,
 			dir: seat.facingDir,
-			x: seat.col * TILE_SIZE + TILE_SIZE / 2,
-			y: seat.row * TILE_SIZE + TILE_SIZE / 2,
+			x: seat.col * TILE_SIZE,
+			y: seat.row * TILE_SIZE,
 			tileCol: seat.col,
 			tileRow: seat.row,
 			palette: i % 6,
 			frame: 0,
 			frameTimer: 0,
 			isActive: false,
-			seat
+			seat,
+			path: [],
+			moveProgress: 0,
+			wanderTimer: 2 + Math.random() * 18,
+			wander_count: 0,
+			wander_limit: 1 + Math.floor(Math.random() * 4),
 		}
 		chars.push(ch)
 		initAgent(agent.name_file, agent.name_agent || agent.name_file, i % 6)
@@ -39,13 +45,11 @@ watch(data_agents, (agents) => {
 	characters.value = chars
 }, { immediate: true })
 
-// Sync streaming state -> character animation
+// Sync streaming state -> engine handles state transitions
 watch(map_chats, (chats) => {
 	for (const ch of characters.value) {
 		const chatState = chats.get(ch.id)
-		const streaming = chatState?.is_streaming ?? false
-		ch.isActive = streaming
-		ch.state = streaming ? CharacterState.TYPE : CharacterState.IDLE
+		ch.isActive = chatState?.is_streaming ?? false
 	}
 }, { deep: true })
 

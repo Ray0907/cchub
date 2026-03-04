@@ -9,6 +9,11 @@ const links_main: NavigationMenuItem[] = [{
 	to: '/ai',
 	onSelect: () => { open.value = false }
 }, {
+	label: 'Office',
+	icon: 'i-lucide-building-2',
+	to: '/office',
+	onSelect: () => { open.value = false }
+}, {
 	label: 'Overview',
 	icon: 'i-lucide-layout-dashboard',
 	to: '/',
