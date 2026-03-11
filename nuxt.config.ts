@@ -44,6 +44,12 @@ export default defineNuxtConfig({
 		anthropicApiKey: ''
 	},
 
+	nitro: {
+		externals: {
+			inline: ['better-sqlite3']
+		}
+	},
+
 	compatibilityDate: '2025-01-01',
 
 	eslint: {

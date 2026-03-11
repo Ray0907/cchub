@@ -23,6 +23,22 @@ const { data, refresh, status } = useFetch('/api/ai/sessions', {
 const list_sessions = computed(() => data.value?.sessions ?? [])
 const list_projects = computed(() => data.value?.projects ?? [])
 
+// Full-text search (FTS) — triggers when query >= 3 chars
+const is_content_search = computed(() => (query_debounced.value?.length ?? 0) >= 3)
+const search_params = computed(() => ({
+	q: query_debounced.value || undefined,
+	project: filter_project.value || undefined,
+	limit: 50
+}))
+
+const { data: data_search, status: status_search } = useFetch('/api/ai/sessions/search', {
+	query: search_params,
+	watch: [search_params],
+	default: () => ({ results: [] as Array<{ session_id: string, project: string, title: string, cwd: string, time_modified: string, snippet: string, score: number }>, query: '' })
+})
+
+const list_search_results = computed(() => data_search.value?.results ?? [])
+
 // Archive data
 const { data: list_archive, refresh: refreshArchive } = useFetch('/api/ai/sessions/archive', {
 	default: () => [] as Array<{ id: string; title: string; project: string; deleted_at: string }>
@@ -312,8 +328,46 @@ async function handleEmptyTrash(): Promise<void> {
 					</div>
 
 					<!-- Loading state -->
-					<div v-if="status === 'pending'" class="px-4 space-y-2">
+					<div v-if="status === 'pending' && !is_content_search" class="px-4 space-y-2">
 						<div v-for="i in 6" :key="i" class="h-12 rounded-lg bg-elevated/30 animate-pulse" />
+					</div>
+
+					<!-- FTS content search results -->
+					<div v-else-if="is_content_search" class="px-4 pb-4">
+						<div v-if="status_search === 'pending'" class="space-y-2">
+							<div v-for="i in 4" :key="i" class="h-16 rounded-lg bg-elevated/30 animate-pulse" />
+						</div>
+						<div v-else-if="list_search_results.length > 0" class="space-y-1">
+							<p class="text-[10px] text-dimmed/50 px-3 py-1">
+								{{ list_search_results.length }} content match{{ list_search_results.length === 1 ? '' : 'es' }}
+							</p>
+							<div
+								v-for="result in list_search_results"
+								:key="result.session_id"
+								class="w-full flex flex-col gap-1 px-3 py-2.5 rounded-lg text-left text-sm hover:bg-elevated/50 transition-colors cursor-pointer group"
+								@click="handleResumeSession({ id: result.session_id, cwd: result.cwd })"
+							>
+								<div class="flex items-center gap-3 min-w-0">
+									<UIcon name="i-lucide-search" class="size-3.5 text-dimmed shrink-0 group-hover:text-primary transition-colors" />
+									<span class="flex-1 truncate">{{ result.title || 'Untitled session' }}</span>
+									<UBadge color="neutral" variant="subtle" size="xs" class="shrink-0">
+										{{ result.project }}
+									</UBadge>
+									<span class="text-[10px] text-dimmed/50 shrink-0">{{ formatTimeAgo(result.time_modified) }}</span>
+								</div>
+								<!-- eslint-disable-next-line vue/no-v-html -->
+								<p class="text-xs text-dimmed/70 pl-6.5 line-clamp-2 [&>mark]:bg-primary/20 [&>mark]:text-primary [&>mark]:rounded-sm [&>mark]:px-0.5" v-html="result.snippet" />
+							</div>
+						</div>
+						<div v-else class="flex flex-col items-center justify-center py-16 text-center">
+							<UIcon name="i-lucide-search-x" class="size-10 text-dimmed/30 mb-3" />
+							<p class="text-sm text-dimmed">
+								No content matches
+							</p>
+							<p class="text-xs text-dimmed/50 mt-1">
+								Try different keywords or a shorter query
+							</p>
+						</div>
 					</div>
 
 					<!-- Session list -->
