@@ -4,6 +4,11 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 const open = ref(false)
 
 const links_main: NavigationMenuItem[] = [{
+	label: 'Mission Control',
+	icon: 'i-lucide-radar',
+	to: '/mission-control',
+	onSelect: () => { open.value = false }
+}, {
 	label: 'Claude Code',
 	icon: 'i-lucide-terminal-square',
 	to: '/ai',
