@@ -15,7 +15,7 @@
     "@iconify-json/lucide": "^1.2.87",
     "@iconify-json/simple-icons": "^1.2.68",
     "@internationalized/date": "^3.10.1",
-    "@nuxt/ui": "^4.4.0",
+    "@nuxt/ui": "^4.6.0",
     "@nuxtjs/mdc": "^0.20.1",
     "@tanstack/table-core": "^8.21.3",
     "@unovis/ts": "^1.6.2",
@@ -42,7 +42,15 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3"
-    ]
+    ],
+    "overrides": {
+      "vue": "^3.5.29",
+      "@vue/runtime-core": "^3.5.29",
+      "@vue/runtime-dom": "^3.5.29",
+      "@vue/reactivity": "^3.5.29",
+      "@vue/shared": "^3.5.29",
+      "reka-ui": "2.9.2"
+    }
   },
   "packageManager": "pnpm@10.28.1"
 }

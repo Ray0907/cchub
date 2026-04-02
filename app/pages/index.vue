@@ -1,3 +1,7 @@
 <script setup lang="ts">
-navigateTo('/mission-control', { replace: true })
+await navigateTo('/mission-control', { replace: true })
 </script>
+
+<template>
+	<div />
+</template>
